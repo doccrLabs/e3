@@ -16,9 +16,25 @@
 #define DT_CMD    "/tmp/dt/cmd"
 #define DT_DIRTY  "/tmp/dt/dirty"
 #define DT_CURSOR "/tmp/dt/cursor"
-#define MOUSE_DEV "/dev/input/mouse0"
 
-#define DT_BG 0xFF008080u  // win95/98 teal ig
+#ifdef __doccr__
+	#define MOUSE_DEV    "/dev/mouse0"
+	#define KEYBOARD_DEV "/dev/kbd0"
+#elif __has_include
+	// idfk if this works... rn i cant test it cuz doccrOS isnt finished
+	// but i think it works in newer gcc vrsions __has_include is supported ig.... :/
+    #if __has_include(<emx/sinfo.h>)
+        #include <emx/sinfo.h>
+        #if defined(__EMEX__)
+	       	#define MOUSE_DEV    "/dev/mouse0"
+			#define KEYBOARD_DEV "/dev/kbd0"
+        #endif
+    #endif
+#else
+    #error "Unsupported operating system"
+#endif
+
+#define DT_BG 0xFF008080u  // win95/98 teal ig its a fallback
 
 #define DARK_MODE 1
 
