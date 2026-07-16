@@ -14,6 +14,9 @@ CC     := x86_64-elf-gcc
 LD     := x86_64-elf-ld
 LIBC   ?= include/libc
 
+OS_PATH ?= ~/doccrLabs/doccrOS/
+ROOTFS_PATH ?= $(OS_PATH)dsk/rd/emr/
+
 CFLAGS := -ffreestanding -nostdlib -fno-builtin -fno-stack-protector    \
           -fno-PIE -fno-pic -m64 -march=x86-64 -mno-sse -mno-sse2       \
           -mno-mmx -mno-red-zone -Wall -Wextra -std=gnu11 -D__doccr__   \
@@ -37,7 +40,7 @@ OBJS := build/desktop.o \
         build/taskbar/taskbar.o \
         build/taskbar/entries.o
 
-all: clean $(LIBC)/build/crt0.o dirs build/desktop.elf
+all: clean $(LIBC)/build/crt0.o dirs build/desktop.elf run
 
 fetchDeps:
 	mkdir -p include
@@ -59,11 +62,16 @@ dirs:
 	mkdir -p build/cmd
 	mkdir -p build/fonts
 	mkdir -p build/taskbar
+run:
+	@echo "running OS..."
+	cd $(OS_PATH) && make run
 
 build/desktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a
 	@echo "Building e3 now..."
 	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS) $(LIBC)/build/libc.a -o $@
 	@echo "e3 was succesfully built!"
+	@cp build/desktop.elf $(ROOTFS_PATH)desktop.elf
+
 
 build/desktop.o:                    src/desktop.c                   ; $(CC) $(CFLAGS) -c $< -o $@
 build/compositor/comp.o:            src/compositor/comp.c           ; $(CC) $(CFLAGS) -c $< -o $@
@@ -85,4 +93,4 @@ $(LIBC)/build/crt0.o $(LIBC)/build/libc.a:
 clean:
 	rm -f build/*.o build/compositor/*.o build/bg/*.o build/bg/bmp/*.o build/win/*.o build/cursor/*.o build/render/*.o build/input/*.o build/cmd/*.o build/fonts/* build/taskbar/*.o build/desktop.elf
 
-.PHONY: all clean
+.PHONY: all clean install run
