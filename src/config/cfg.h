@@ -18,8 +18,9 @@
 #define DT_CURSOR "/tmp/dt/cursor"
 
 #ifdef __doccr__
-	#define MOUSE_DEV    "/dev/mouse0"
+	#define MOUSE_DEV    "/dev/mouse"
 	#define KEYBOARD_DEV "/dev/kbd0"
+	#define FRAMEBUFFER_DEV "/dev/fb0"
 #elif __has_include
 	// idfk if this works... rn i cant test it cuz doccrOS isnt finished
 	// but i think it works in newer gcc vrsions __has_include is supported ig.... :/
@@ -28,6 +29,7 @@
         #if defined(__EMEX__)
 	       	#define MOUSE_DEV    "/dev/mouse0"
 			#define KEYBOARD_DEV "/dev/kbd0"
+			#define FRAMEBUFFER_DEV "/dev/fb0"
         #endif
     #endif
 #else

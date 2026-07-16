@@ -13,7 +13,7 @@
 #pragma once
 
 #include <sys/types.h>
-#include <emx/mouse.h>
+#include <sys/input.h>
 #include "../win/win.h"
 #include "../cursor/cursor.h"
 
@@ -53,3 +53,4 @@ void input_frame_begin(input_state_t *is);
 void input_init(void);
 int input_drain(int mfd, input_state_t *is);
 int win_get_resize_edge(int idx, int mx, int my);
+void input_set_screen_size(int w, int h);

@@ -45,6 +45,13 @@ static int g_focused_idx = -1;
 
 drag_info_t g_input_drag_prev;
 
+static int g_scr_w = 1280, g_scr_h = 720;
+void input_set_screen_size(int w, int h)
+{
+	g_scr_w = w;
+	g_scr_h = h;
+}
+
 // minimum window size
 #define WIN_MIN_W 80
 #define WIN_MIN_H 40
@@ -384,14 +391,38 @@ static int handle_one(mouse_event_t *ev, input_state_t *is)
 
 int input_drain(int mfd, input_state_t *is)
 {
-    mouse_event_t ev;
+    input_event_t ev;
     int got = 0;
+    int mx = is->cx;
+    int my = is->cy;
+    int btn_left = g_last_btn;
 
     while ((int)read(mfd, &ev, sizeof(ev)) == (int)sizeof(ev))
     {
-        if (handle_one(&ev, is)) is->win_changed = 1;
+        //if (handle_one(&ev, is)) is->win_changed = 1;
         got = 1;
+        if (ev.type == INPUT_EV_REL) {
+            if (ev.code == INPUT_REL_X) mx += ev.value;
+            if (ev.code == INPUT_REL_Y) my += ev.value;
+        } else if (ev.type == INPUT_EV_KEY) {
+            if (ev.code == INPUT_BTN_LEFT)  btn_left = ev.value;
+        }
     }
 
-    return got;
+    if (!got) return 0;
+    if (mx < 0) mx = 0;
+    if (my < 0) my = 0;
+    if (mx >= g_scr_w) mx = g_scr_w - 1;
+    if (my >= g_scr_h) my = g_scr_h - 1;
+
+    mouse_state_t synth =
+    {
+    	.abs_x = mx,
+     	.abs_y = my,
+      	.buttons = btn_left ? 1 : 0
+    };
+
+    if (handle_one(&synth, is)) is->win_changed = 1;
+
+    return 1;
 }

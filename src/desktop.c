@@ -10,11 +10,12 @@
  *
  */
 
+#include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/ioctl.h>
+//#include <sys/ioctl.h>
 
 #include "config/cfg.h"
 #include "compositor/comp.h"
@@ -26,7 +27,8 @@
 #include "taskbar/taskbar.h"
 #include "cmd/cmd.h"
 
-#include <emx/fb.h>
+#include <sys/fb.h>
+#include <sys/input.h>
 
 #define DT_WBUF_PREFIX "/tmp/dt/wbuf_"
 
@@ -330,34 +332,40 @@ static void render_band(input_state_t *is)
 
 int main(void)
 {
-    mkdir(DT_DIR);
+	mkdir(DT_DIR, 0);
+	printf("mkdir " DT_DIR "...\n");
 
     int fd;
+    printf("test1\n");
     fd = open(DT_CMD, O_WRONLY | O_CREAT); if (fd >= 0) close(fd);
     fd = open(DT_DIRTY, O_WRONLY | O_CREAT);
     if (fd >= 0) close(fd);
 
-    int fb = open("/dev/fb0", O_RDWR);
+
+    printf("reading framebuffer + mouse");
+    int fb = open(FRAMEBUFFER_DEV, O_RDWR);
     int mfd = open(MOUSE_DEV, O_RDONLY);
 
     if (fb < 0 || mfd < 0) return 1;
 
-    fb_var_screeninfo vinfo;
-    ioctl(fb, FBIOGET_VSCREENINFO, &vinfo);
+    fb_info_t info;
+    ioctl(fb, FB_IOCTL_GET_INFO, &info);
 
-    int scr_w = (int)vinfo.xres;
-    int scr_h = (int)vinfo.yres;
+    int scr_w = (int)info.width;
+    int scr_h = (int)info.height;
 
     //TODO:
     // look for real display size
     if (scr_w <= 0) scr_w = 1024;
     if (scr_h <= 0) scr_h = 768;
 
+    input_set_screen_size(scr_w, scr_h);
+    input_init();
+
     comp_init(fb, scr_w, scr_h);
     bg_init(scr_w, scr_h);
     cur_init(fb, scr_w, scr_h);
     taskbar_init(scr_w, scr_h);
-    input_init();
 
     bg_draw_full();
     comp_flush();

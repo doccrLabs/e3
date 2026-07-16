@@ -19,14 +19,12 @@ CFLAGS := -ffreestanding -nostdlib -fno-builtin -fno-stack-protector    \
           -mno-mmx -mno-red-zone -Wall -Wextra -std=gnu11 -D__doccr__   \
           -I$(LIBC)/include                                             \
           -I$(LIBS_D)/libfont                                           \
-          -I$(LIBS_D)/libbmp                                            \
-          -I$(LIBS_D)/emxfb0
+          -I$(LIBS_D)/libbmp
 
 LDFLAGS := -nostdlib -static -no-pie -T ../../user.ld
 
 LIBS := $(LIBS_D)/libfont/libfont.a       \
-        $(LIBS_D)/libbmp/libbmp.a         \
-        $(LIBS_D)/emxfb0/libemxfb0.a
+        $(LIBS_D)/libbmp/libbmp.a
 
 OBJS := build/desktop.o \
 		build/desktop_input_dispatch.o \
@@ -61,7 +59,6 @@ $(LIBC)/build/crt0.o $(LIBC)/build/libc.a:
 	$(MAKE) -C $(LIBC)
 
 libs:
-	$(MAKE) -C $(LIBS_D)/emxfb0
 	$(MAKE) -C $(LIBS_D)/libfont
 	$(MAKE) -C $(LIBS_D)/libbmp
 
