@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define BMP_ROW_BUF_W 4096
+
 typedef struct {
     unsigned char sig[2];      /* 'B', 'M'                      */
     unsigned int file_size;    /*total file size in bytes       */
@@ -227,27 +229,24 @@ void bmp_free(bmp_image_t *img)
 }
 
 void bmp_draw(
-	draw_ctx *ctx,
 	const bmp_image_t *img,
 	int x,
 	int y
 ){
-    bmp_draw_ex(ctx, img, x, y, 0, 0, -1, 0, 255);
+    bmp_draw_ex(img, x, y, 0, 0, -1, 0, 255);
 }
 
 void bmp_draw_scaled(
-	draw_ctx *ctx,
 	const bmp_image_t *img,
     int x,
     int y,
     int w,
     int h
 ){
-    bmp_draw_ex(ctx, img, x, y, w, h, -1, 0, 255);
+    bmp_draw_ex(img, x, y, w, h, -1, 0, 255);
 }
 
 void bmp_draw_ex(
-	draw_ctx *ctx,
 	const bmp_image_t *img,
     int x,
     int y,
@@ -257,13 +256,17 @@ void bmp_draw_ex(
     int bright,
     int alpha
 ) {
-    if (!ctx || !img || !img->pixels) return;
+    static unsigned int row_buf[BMP_ROW_BUF_W];
+
+    if (!img || !img->pixels) return;
     if (alpha == 0) return; // fully transparent 0x00
 
     int src_w = img->width;
     int src_h = img->height;
     int dst_w = (w > 0) ? w : src_w;
     int dst_h = (h > 0) ? h : src_h;
+
+    int scr_h = comp_h();
 
     // cheks for effects
     int has_fx = (sat != -1 || bright != 0 || alpha != 255);
@@ -274,9 +277,9 @@ void bmp_draw_ex(
         int sy = (dst_h > 1) ? (dy * (src_h - 1) / (dst_h - 1)) : 0;
         int row_len = dst_w;
 
-        if (abs_y < 0 || abs_y >= ctx->h) continue;
+        if (abs_y < 0 || abs_y >= scr_h) continue;
         if (sy >= src_h) sy = src_h - 1;
-        if (row_len > DS_ROW_BUF_W) row_len = DS_ROW_BUF_W;
+        if (row_len > BMP_ROW_BUF_W) row_len = BMP_ROW_BUF_W;
 
         for (int dx = 0; dx < row_len; dx++)
         {
@@ -288,11 +291,11 @@ void bmp_draw_ex(
 
             if (has_fx) pix = _apply_fx(pix, sat, bright, alpha);
 
-            ctx->row_buf[dx] = pix;
+            row_buf[dx] = pix;
         }
 
-        // ds_blit_row goes to FBIO_BLIT which skips pixels where alpha == 0
-        ds_blit_row(ctx, x, abs_y, row_len); // for now efb0 lib
+        // comp_put_row skips pixels that fall outside the screen bounds
+        comp_put_row(x, abs_y, row_buf, row_len); // via e3 compositor now
         //TODO:
         // remove ts
     }

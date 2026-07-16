@@ -17,7 +17,7 @@
  *
  */
 
-#include "../emxfb0/emxfb0.h"
+#include "../../compositor/comp.h"
 
 typedef struct {
     int width;
@@ -30,15 +30,15 @@ int bmp_load(const char *path, bmp_image_t *img);
 
 void bmp_free(bmp_image_t *img);
 
-void bmp_draw(draw_ctx *ctx, const bmp_image_t *img, int x, int y);
+void bmp_draw(const bmp_image_t *img, int x, int y);
 
 void bmp_draw_scaled(
-	draw_ctx *ctx, const bmp_image_t *img,
+	const bmp_image_t *img,
     int x, int y, int w, int h
 );
 
 void bmp_draw_ex(
-	draw_ctx *ctx, const bmp_image_t *img,
+	const bmp_image_t *img,
     int x, int y, int w, int h,
     int sat, int bright, int alpha
 );

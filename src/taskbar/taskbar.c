@@ -15,7 +15,7 @@
 #include "dt_taskbar.h"
 #include "../compositor/comp.h"
 #include "../config/cfg.h"
-#include "../../../libs/libfont/libfont.h"
+#include "../fonts/fonts.h"
 #include "../desktop_input_dispatch.h"
 
 #include <string.h>
@@ -292,7 +292,7 @@ int taskbar_click(int mx, int my)
 
         if (wg->type == TB_WIDGET_APP)
         {
-        	// just spawn and forget, no wait
+        	/*// just spawn and forget, no wait
             pid_t pid = fork();
             if (pid == 0)
             {
@@ -303,7 +303,7 @@ int taskbar_click(int mx, int my)
                 _exit(1);
             }
 
-            return 1;
+            return 1;*/
         }
 
         if (wg->type == TB_WIDGET_LABEL || wg->type == TB_WIDGET_UPDATED_LABEL)
@@ -313,7 +313,7 @@ int taskbar_click(int mx, int my)
 
             // when app launches it register the popup via tbcmd
             if (wg->exec[0] != '\0') {
-                pid_t pid = fork();
+                /*pid_t pid = fork();
                 if (pid == 0) {
                     char *argv[] = { wg->exec, (char *)0 };
                     char *envp[] = { (char *)0 };
@@ -323,6 +323,7 @@ int taskbar_click(int mx, int my)
                 }
                 //when app sends R cmd to /tmp/dt/tbcmd
                 wg->popup_pid = pid;
+                */
 
                 //L <name> <text> == update label text
                 // R <name> <pid> <w> <h> == registers and opens popup window

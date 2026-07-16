@@ -17,7 +17,6 @@
 #include "../taskbar/taskbar.h"
 
 #include <unistd.h>
-#include <emx/mouse.h>
 
 static int g_last_btn = 0;
 static int g_drag_idx = -1;
@@ -131,12 +130,12 @@ void input_frame_begin(input_state_t *is)
     is->sel_py1 = is->sel_y1;
 }
 
-static int handle_one(mouse_event_t *ev, input_state_t *is)
+static int handle_one(mouse_state_t *ev, input_state_t *is)
 {
-    int mx = ev->abs_x;
-    int my = ev->abs_y;
-    int btn = ev->buttons & MOUSE_BTN_LEFT;
-    int rbtn = ev->buttons & MOUSE_BTN_RIGHT;
+	int mx = ev->abs_x;
+	int my = ev->abs_y;
+	int btn = ev->buttons & 1;
+	int rbtn = ev->buttons & 2;
     int changed = 0;
 
     is->cx = mx;

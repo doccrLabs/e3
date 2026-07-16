@@ -48,6 +48,13 @@ typedef struct
     int _sel_was_active; 	// tracks previous frame state for release clear
 } input_state_t;
 
+typedef struct
+{
+    int abs_x;
+    int abs_y;
+    int buttons;
+} mouse_state_t;
+
 void input_frame_begin(input_state_t *is);
 
 void input_init(void);
