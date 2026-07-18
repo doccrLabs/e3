@@ -13,14 +13,30 @@
 #include "comp.h"
 #include <sys/fb.h>
 #include <unistd.h>
+#include <stdio.h>
 
 static int g_fd = -1;
 static int g_w = 0;
 static int g_h = 0;
 static unsigned int *g_buf = 0;
 static unsigned int g_stride = 0;
+static unsigned int *g_buf_shadow = 0;
 
 // fixed by @offihito
+
+static void check_g_buf(const char *where)
+{
+    if (g_buf_shadow && g_buf != g_buf_shadow)
+    {
+        printf(
+        	"[COMP] !!! g_buf CHANGED at %s: was=%p now=%p\n",
+            where,
+            (void*)g_buf_shadow,
+            (void*)g_buf
+        );
+    }
+    g_buf_shadow = g_buf;
+}
 
 void comp_init(int fb_fd, int w, int h) {
 	(void)w;
@@ -40,8 +56,9 @@ void comp_init(int fb_fd, int w, int h) {
     g_buf = (unsigned int *)vaddr;
 }
 
-void comp_capture(void) {
-	//
+void comp_capture(void)
+{
+	check_g_buf(__func__);
 }
 
 void comp_fill(
@@ -51,6 +68,7 @@ void comp_fill(
 	int h,
 	unsigned int color
 ){
+	check_g_buf(__func__);
     if (!g_buf) return;
     for (int dy = 0; dy < h; dy++)
     {
@@ -68,6 +86,7 @@ unsigned int comp_get(
 	int x,
 	int y
 ){
+	check_g_buf(__func__);
     if (
     	!g_buf ||
      	x < 0 ||
@@ -84,6 +103,7 @@ void comp_set(
 	int y,
 	unsigned int c
 ) {
+	check_g_buf(__func__);
     if (
     	!g_buf ||
      	x < 0 ||
@@ -101,6 +121,7 @@ void comp_put_row(
 	const unsigned int *row,
 	int len
 ) {
+	check_g_buf(__func__);
     if (
     	!g_buf ||
      	y < 0 ||
@@ -125,6 +146,7 @@ comp_copy_rect(
 	int w,
 	int h
 ){
+	check_g_buf(__func__);
     if (
     	!g_buf ||
      	w <= 0 ||
@@ -167,6 +189,7 @@ void comp_put_pixels(
 	int h,
 	const unsigned int *pixels
 ) {
+	check_g_buf(__func__);
     if (!g_buf || !pixels) return;
     for (int row = 0; row < h; row++)
     {
@@ -184,10 +207,21 @@ void comp_put_pixels(
 
 void comp_flush(void)
 {
+	check_g_buf(__func__);
     if (!g_buf || g_fd < 0) return;
     ioctl(g_fd, FB_IOCTL_FLUSH, 0);
 }
 
-int comp_w(void) { return g_w; }
+int comp_w(void) {
+    if (g_w <= 0 || g_h <= 0)
+        printf("[COMP] !!! comp_w() called with corrupted state: g_w=%d g_h=%d g_buf=%p g_fd=%d\n",
+               g_w, g_h, (void*)g_buf, g_fd);
+    return g_w;
+}
 
-int comp_h(void) { return g_h; }
+int comp_h(void) {
+    if (g_w <= 0 || g_h <= 0)
+        printf("[COMP] !!! comp_h() called with corrupted state: g_w=%d g_h=%d g_buf=%p g_fd=%d\n",
+               g_w, g_h, (void*)g_buf, g_fd);
+    return g_h;
+}

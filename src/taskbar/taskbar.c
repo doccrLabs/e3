@@ -19,6 +19,7 @@
 #include "../desktop_input_dispatch.h"
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -28,7 +29,6 @@ typedef struct
     char 	name[TB_ENTRY_NAMELEN];
     char 	exec[TB_ENTRY_EXECLEN];
 } tb_entry_t;*/
-
 
 static tb_widget_t  s_widgets[TB_WIDGET_MAX];
 //static int	s_entry_count = 0;
@@ -92,6 +92,51 @@ static int hit_btn(int i, int mx, int my)
     	mx >= bx && mx < bx + TB_BTN_W &&
         my >= by && my < by + (TB_H - TB_BTN_VPAD * 2)
     ;
+}
+
+static int power_btn_x(void)
+{
+    return s_scr_w - TB_POWER_W - TB_BTN_PAD;
+}
+
+static int hit_power_btn(int mx, int my)
+{
+    int bx = power_btn_x();
+    int by = s_tb_y + TB_BTN_VPAD;
+    int bh = TB_H - TB_BTN_VPAD * 2;
+
+    return
+    	mx >= bx &&
+     	mx < bx + TB_POWER_W &&
+        my >= by &&
+        my < by + bh
+    ;
+}
+
+static int file_exists(const char *path)
+{
+    long fd = open(path, O_RDONLY);
+    if (fd < 0) return 0;
+
+    close((int)fd);
+
+    return 1;
+}
+
+static void launch_poweroff(void)
+{
+    if (!file_exists(POWEROFF_LAUNCHPAD_PATH)) return;
+
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        char *argv[] = { POWEROFF_LAUNCHPAD_PATH, (char *)0 };
+        char *envp[] = { (char *)0 };
+
+        printf("[TASKBAR] launching poweroff via '%s'\n", POWEROFF_LAUNCHPAD_PATH);
+        execve(POWEROFF_LAUNCHPAD_PATH, argv, envp);
+        _exit(1);
+    }
 }
 
 static void popup_pos(int i, int pw, int ph, int *out_x, int *out_y)
@@ -199,6 +244,52 @@ void taskbar_draw(int mx, int my, int btn_down)
     int fw = font_w(FONT8X12_BOLD);
     int fh = font_h(FONT8X12_BOLD);
 
+    {
+        int bx  = power_btn_x();
+        int by  = y + TB_BTN_VPAD;
+        int bh  = TB_H - (TB_BTN_VPAD * 2);
+        int hov = hit_power_btn(mx, my);
+        int press = hov && btn_down;
+
+        comp_fill(bx, by, TB_POWER_W, bh, TB_BACKGROUND);
+
+        if (hov || press)
+        {
+            unsigned int col = press ? TB_BTN_TOP : TB_LIGHT;
+
+            comp_fill(bx, by, TB_POWER_W, TB_BORDER_W, col);
+            comp_fill(bx, by + bh - TB_BORDER_W, TB_POWER_W, TB_BORDER_W, col);
+            comp_fill(bx, by, TB_BORDER_W, bh, col);
+            comp_fill(bx + TB_POWER_W - TB_BORDER_W, by, TB_BORDER_W, bh, col);
+            comp_fill(bx, by, TB_POWER_W, bh, TB_BUTTON_BG);
+
+            if (hov || press) comp_fill(bx, by, TB_POWER_W, 2, TB_TOP_BORDER);
+        }
+
+        const char *label = "power";
+        int nlen = _slen(label);
+        int fw2 = font_w(FONT8X12_BOLD);
+        int fh2 = font_h(FONT8X12_BOLD);
+        int tw = nlen * fw2;
+        int tx = bx + (TB_POWER_W - tw) / 2;
+        int ty = by + (bh - fh2) / 2;
+
+        for (int ci = 0; ci < nlen; ci++)
+        {
+            unsigned char c = (unsigned char)label[ci] & 0x7Fu;
+            for (int row = 0; row < fh2; row++)
+            {
+                uint16_t bits = font_glyph(FONT8X12_BOLD, c, row);
+                for (int col = 0; col < fw2; col++)
+                {
+                    unsigned int bg_col = (hov || press) ? TB_BUTTON_BG : TB_BACKGROUND;
+                    unsigned int color = (bits & (1u << col)) ? TB_WHITE : bg_col;
+                    comp_set(tx + ci * fw2 + col, ty + row, color);
+                }
+            }
+        }
+    }
+
     for (int i = 0; i < s_widget_count; i++)
     {
         tb_widget_t *wg = &s_widgets[i];
@@ -284,6 +375,12 @@ int taskbar_click(int mx, int my)
 {
     if (my < s_tb_y) return 0;
 
+    if (hit_power_btn(mx, my))
+    {
+        launch_poweroff();
+        return 1;
+    }
+
     for (int i = 0; i < s_widget_count; i++)
     {
         if (!hit_btn(i, mx, my)) continue;
@@ -292,18 +389,20 @@ int taskbar_click(int mx, int my)
 
         if (wg->type == TB_WIDGET_APP)
         {
-        	/*// just spawn and forget, no wait
+        	if (!file_exists(wg->exec)) return 1;
+        	// just spawn and forget, no wait
             pid_t pid = fork();
             if (pid == 0)
             {
                 char *argv[] = { wg->exec, (char *)0 };
                 char *envp[] = { (char *)0 };
 
+                printf("[TASKBAR] launching '%s' (pid will be child)\n", wg->exec);
                 execve(wg->exec, argv, envp);
                 _exit(1);
             }
 
-            return 1;*/
+            return 1;
         }
 
         if (wg->type == TB_WIDGET_LABEL || wg->type == TB_WIDGET_UPDATED_LABEL)
@@ -311,19 +410,19 @@ int taskbar_click(int mx, int my)
             // if the app popup id is already opened then it does nothing so it doesnt show 2 times
             if (wg->popup_pid > 0) return 1;
 
-            // when app launches it register the popup via tbcmd
-            if (wg->exec[0] != '\0') {
-                /*pid_t pid = fork();
+            if (wg->exec[0] != '\0' && file_exists(wg->exec))
+            {
+                pid_t pid = fork();
                 if (pid == 0) {
                     char *argv[] = { wg->exec, (char *)0 };
                     char *envp[] = { (char *)0 };
 
+                    printf("[TASKBAR] launching '%s' (pid will be child)\n", wg->exec);
                     execve(wg->exec, argv, envp);
                     _exit(1);
                 }
                 //when app sends R cmd to /tmp/dt/tbcmd
                 wg->popup_pid = pid;
-                */
 
                 //L <name> <text> == update label text
                 // R <name> <pid> <w> <h> == registers and opens popup window

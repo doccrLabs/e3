@@ -18,9 +18,9 @@ static tb_widget_t s_entries[] =
 {
     {
         .type          = TB_WIDGET_APP,
-        .name          = "term",
-        .text          = "term",
-        .exec          = "/emr/system/terminal.emx",
+        .name          = "login",
+        .text          = "login",
+        .exec          = "/emr/system/login.elf",
         .icon          = { .loaded = 0 },
         .popup_pid     = -1,
         .popup_w       = 0,

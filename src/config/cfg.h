@@ -53,6 +53,9 @@
 #define TB_ENTRY_NAMELEN 32
 #define TB_ENTRY_EXECLEN 64
 #define TB_MAX_ENTRIES 10
+#define TB_POWER_W 60
+
+#define POWEROFF_LAUNCHPAD_PATH "/bin/poweroff.elf"
 
 #if DARK_MODE == 1
 	#define TB_BACKGROUND  0xFF202020u

@@ -332,6 +332,7 @@ static void render_band(input_state_t *is)
 
 int main(void)
 {
+	printf("\n Welcome to e3!\n");
 	mkdir(DT_DIR, 0);
 	printf("mkdir " DT_DIR "...\n");
 

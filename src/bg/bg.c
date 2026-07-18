@@ -114,6 +114,20 @@ void bg_draw_rect(int x, int y, int w, int h)
     int sh = comp_h();
     int dy, dx;
 
+    if (sw <= 0 || sh <= 0)
+    {
+        printf(
+        	"[BG] bg_draw_rect: bailing out, invalid screen size sw=%d sh=%d \n(x=%d y=%d w=%d h=%d)\n",
+         	sw,
+          	sh,
+           	x,
+            y,
+            w,
+            h
+        );
+        return;
+    }
+
     if (!g_bg_loaded || !g_bg.pixels) {
         comp_fill(x, y, w, h, DT_BG);
         return;

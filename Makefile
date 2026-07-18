@@ -15,11 +15,11 @@ LD     := x86_64-elf-ld
 LIBC   ?= include/libc
 
 OS_PATH ?= ~/doccrLabs/doccrOS/
-ROOTFS_PATH ?= $(OS_PATH)dsk/rd/emr/
+ROOTFS_PATH ?= $(OS_PATH)dsk/rd/emr/system/
 
-CFLAGS := -ffreestanding -nostdlib -fno-builtin -fno-stack-protector    \
-          -fno-PIE -fno-pic -m64 -march=x86-64 -mno-sse -mno-sse2       \
-          -mno-mmx -mno-red-zone -Wall -Wextra -std=gnu11 -D__doccr__   \
+CFLAGS := -ffreestanding -nostdlib -fno-builtin -fno-stack-protector     \
+          -fno-PIE -fno-pic -m64 -march=x86-64 -mno-sse -mno-sse2        \
+          -mno-mmx -mno-red-zone -Wall -Wextra -std=gnu11 -D__doccr__ -g \
           -I$(LIBC)/include
 
 LDFLAGS := -nostdlib -static -no-pie -T user.ld
@@ -70,6 +70,7 @@ build/desktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a
 	@echo "Building e3 now..."
 	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS) $(LIBC)/build/libc.a -o $@
 	@echo "e3 was succesfully built!"
+	@rm -f  $(ROOTFS_PATH)/desktop.elf
 	@cp build/desktop.elf $(ROOTFS_PATH)desktop.elf
 
 
