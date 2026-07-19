@@ -12,7 +12,8 @@
 
 #pragma once
 
-#define BG_PATH "/emr/system/desktop/background/1.bmp"
+#include "../config/cfg.h"
+#define BG_PATH SYSTEM "/background/1.bmp"
 
 void bg_init(int w, int h);
 void bg_draw_full(void);

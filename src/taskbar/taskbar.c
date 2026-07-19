@@ -51,11 +51,23 @@ static void _itoa(int v, char *out)
     int j = 0;
     int neg = (v < 0);
 
-    if (v == 0) { out[0] = '0'; out[1] = '\0'; return; }
-    if (neg) v = -v;
-    while (v) { tmp[i++] = '0' + v % 10; v /= 10; }
+    if (v == 0)
+    {
+    	out[0] = '0';
+    	out[1] = '\0';
+    	return;
+    }
+    if (neg) v =- v;
+
+    while (v)
+    {
+    	tmp[i++] = '0' + v % 10;
+    	v /= 10;
+    }
     if (neg) tmp[i++] = '-';
+
     while (i > 0) out[j++] = tmp[--i];
+
     out[j] = '\0';
 }
 
@@ -63,18 +75,35 @@ static int _atoi(const char *s)
 {
     int v = 0, neg = 0;
     while (*s == ' ') s++;
-    if (*s == '-') { neg = 1; s++; }
-    while (*s >= '0' && *s <= '9') v = v * 10 + (*s++ - '0');
+
+    if (*s == '-')
+    {
+    	neg = 1;
+    	s++;
+    }
+
+    while (
+    	*s >= '0' &&
+     	*s <= '9'
+    ) v = v * 10 + (*s++ - '0');
+
     return neg ? -v : v;
 }
 
 static const char *_next_tok(const char **p, char *out, int outsz)
 {
+	int i = 0;
+
     while (**p == ' ') (*p)++;
-    int i = 0;
-    while (**p && **p != ' ' && **p != '\n' && i < outsz - 1)
-        out[i++] = *(*p)++;
+    while (
+    	**p &&
+     	**p != ' ' &&
+      	**p != '\n' &&
+       	i < outsz - 1
+    ) out[i++] = *(*p)++;
+
     out[i] = '\0';
+
     return out;
 }
 
@@ -304,7 +333,7 @@ void taskbar_draw(int mx, int my, int btn_down)
         const char *label = (wg->type == TB_WIDGET_APP) ? wg->name : wg->text;
 
         // button face
-        comp_fill(bx, by, TB_BTN_W, bh, TB_BACKGROUND);
+        comp_fill(bx, by, TB_BTN_W, bh, TB_BUTTON_BG);
 
         // win95 style raised/pressed borders
        	/*{
@@ -322,8 +351,6 @@ void taskbar_draw(int mx, int my, int btn_down)
            		comp_fill(bx + TB_BTN_W - 1, by, 1, bh, TB_LIGHT);
 		    }
      	}*/
-
-        // TODO: draw icon here when wg->icon.loaded is set
 
 	    {
 	        int show_border = hov || press;
@@ -346,13 +373,63 @@ void taskbar_draw(int mx, int my, int btn_down)
 	        }
 	    }
 
+        if (wg->icon.loaded)
+        {
+            const bmp_image_t *img = &wg->icon.image;
+
+            const int slot = MAX_APPICON_SIZE;  // max size
+            int draw_w = img->width;
+            int draw_h = img->height;
+
+            // icon cant be bigger than max size so it needs to be downscaled
+            if (draw_w > slot || draw_h > slot)
+            {
+                float sx = (float)slot / (float)draw_w;
+                float sy = (float)slot / (float)draw_h;
+                float s  = (sx < sy) ? sx : sy;
+
+                draw_w = (int)(draw_w * s);
+                draw_h = (int)(draw_h * s);
+
+                if (draw_w < 1) draw_w = 1;
+                if (draw_h < 1) draw_h = 1;
+            }
+
+            // icon slot position
+            int slot_x = bx + 4;
+            int slot_y = by + (bh - slot) / 2;
+
+            // center the logo
+            int ix = slot_x + (slot - draw_w) / 2;
+            int iy = slot_y + (slot - draw_h) / 2;
+
+            // draw
+            if (draw_w == img->width && draw_h == img->height)
+            {
+                bmp_draw(img, ix, iy);
+            }
+            else
+            {
+                bmp_draw_scaled(img, ix, iy, draw_w, draw_h);
+            }
+        }
+
         // label, centered
         int fw   	= font_w(FONT8X12_BOLD);
         int fh   	= font_h(FONT8X12_BOLD);
         int nlen 	  = _slen(label);
         int tw   	= nlen * fw;
-        int tx   	= bx + (TB_BTN_W - tw) / 2 + (press ? 1 : 0);
+        int tx;
         int ty   	= by  + (bh - fh) / 2 + (press ? 1 : 0);
+
+        if (wg->icon.loaded)
+        {
+            tx = bx + 42 + (press ? 1 : 0);
+        }
+        else
+        {
+            tx = bx + (TB_BTN_W - tw) / 2 + (press ? 1 : 0);
+        }
         // draw chars one by one into the comp backbuffer
         for (int ci = 0; ci < nlen; ci++)
         {

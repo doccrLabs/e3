@@ -12,7 +12,6 @@
 
 #include "bg.h"
 #include "../compositor/comp.h"
-#include "../config/cfg.h"
 #include "bmp/bmp.h"
 #include <stdio.h>
 //#include <stdlib.h>

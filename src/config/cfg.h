@@ -21,6 +21,10 @@
 	#define MOUSE_DEV    "/dev/mouse"
 	#define KEYBOARD_DEV "/dev/kbd0"
 	#define FRAMEBUFFER_DEV "/dev/fb0"
+
+	#define SYSTEM "/system/desktop/" //the path to the desktop in the system
+	#define CFGFILE   SYSTEM "desktop.conf"
+	#define ENTRYFILE SYSTEM "entries.json"
 #elif __has_include
 	// idfk if this works... rn i cant test it cuz doccrOS isnt finished
 	// but i think it works in newer gcc vrsions __has_include is supported ig.... :/
@@ -30,11 +34,17 @@
 	       	#define MOUSE_DEV    "/dev/mouse0"
 			#define KEYBOARD_DEV "/dev/kbd0"
 			#define FRAMEBUFFER_DEV "/dev/fb0"
+
+			#define SYSTEM "/emr/system/desktop/"
+			#define CFGFILE   SYSTEM "desktop.conf"
+			#define ENTRYFILE SYSTEM "entries.json"
         #endif
     #endif
 #else
     #error "Unsupported operating system"
 #endif
+
+#define DEFAULT_ICON SYSTEM "/icons/exec.bmp"
 
 #define DT_BG 0xFF008080u  // win95/98 teal ig its a fallback
 
@@ -45,15 +55,17 @@
 #define BAND_FILL   0x33A8A5A5u   // the content
 
 //taskbar
-#define TB_H 34
-#define TB_BTN_PAD 2
+#define TB_H 38
+#define TB_BTN_PAD 3
 #define TB_BTN_VPAD 6
-#define TB_BTN_W 80
+#define TB_BTN_W 120
 #define TB_BORDER_W 3
 #define TB_ENTRY_NAMELEN 32
 #define TB_ENTRY_EXECLEN 64
 #define TB_MAX_ENTRIES 10
 #define TB_POWER_W 60
+
+#define MAX_APPICON_SIZE 22
 
 #define POWEROFF_LAUNCHPAD_PATH "/bin/poweroff.elf"
 

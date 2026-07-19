@@ -14,13 +14,16 @@ CC     := x86_64-elf-gcc
 LD     := x86_64-elf-ld
 LIBC   ?= include/libc
 
-OS_PATH ?= ~/doccrLabs/doccrOS/
-ROOTFS_PATH ?= $(OS_PATH)dsk/rd/emr/system/
+OS_PATH     ?= ~/doccrLabs/doccrOS/
+ROOTFS_PATH ?= $(OS_PATH)dsk/rd/system/desktop/
+OS_LIBS     ?= $(OS_PATH)/user/libs/
+LIBDESKTOP  := libdesktop/
 
 CFLAGS := -ffreestanding -nostdlib -fno-builtin -fno-stack-protector     \
           -fno-PIE -fno-pic -m64 -march=x86-64 -mno-sse -mno-sse2        \
           -mno-mmx -mno-red-zone -Wall -Wextra -std=gnu11 -D__doccr__ -g \
-          -I$(LIBC)/include
+          -I$(LIBC)/include                                              \
+          -I$(LIBDESKTOP)
 
 LDFLAGS := -nostdlib -static -no-pie -T user.ld
 
@@ -51,6 +54,8 @@ fetchDeps:
 	fi
 
 dirs:
+	mkdir -p libdesktop/build
+
 	mkdir -p build
 	mkdir -p build/compositor
 	mkdir -p build/bg
@@ -66,12 +71,14 @@ run:
 	@echo "running OS..."
 	cd $(OS_PATH) && make run
 
-build/desktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a
+build/desktop.elf: dirs $(OBJS) $(LIBC)/build/crt0.o $(LIBC)/build/libc.a $(LIBDESKTOP)/build/libdesktop.a
 	@echo "Building e3 now..."
-	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS) $(LIBC)/build/libc.a -o $@
+	$(LD) $(LDFLAGS) $(LIBC)/build/crt0.o $(OBJS) $(LIBDESKTOP)/build/libdesktop.a $(LIBC)/build/libc.a -o $@
 	@echo "e3 was succesfully built!"
 	@rm -f  $(ROOTFS_PATH)/desktop.elf
 	@cp build/desktop.elf $(ROOTFS_PATH)desktop.elf
+	@cp libdesktop/build/libdesktop.a $(OS_LIBS)libdesktop.a
+	@cp libdesktop/libdesktop.h $(OS_LIBS)libdesktop.h
 
 
 build/desktop.o:                    src/desktop.c                   ; $(CC) $(CFLAGS) -c $< -o $@
@@ -90,6 +97,9 @@ build/cmd/cmd.o:                    src/cmd/cmd.c                   ; $(CC) $(CF
 
 $(LIBC)/build/crt0.o $(LIBC)/build/libc.a:
 	$(MAKE) -C $(LIBC)
+
+$(LIBDESKTOP)/build/libdesktop.a:
+	$(MAKE) -C $(LIBDESKTOP)
 
 clean:
 	rm -f build/*.o build/compositor/*.o build/bg/*.o build/bg/bmp/*.o build/win/*.o build/cursor/*.o build/render/*.o build/input/*.o build/cmd/*.o build/fonts/* build/taskbar/*.o build/desktop.elf

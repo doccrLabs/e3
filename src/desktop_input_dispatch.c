@@ -14,6 +14,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <string.h>
 
 #define DT_INPUT_PFX "/tmp/dt/input_"
 
@@ -62,46 +63,58 @@ static void _pid_path(pid_t pid, char *out)
     out[i]='\0';
 }
 
+#define DT_QUEUE_BYTES (sizeof(int) + sizeof(dt_event_t) * DT_EVENT_QUEUE_MAX)
 void dt_dispatch_event(pid_t focused_pid, const dt_event_t *ev)
 {
     if (focused_pid<=0||!ev) return;
 
     char path[64]; _pid_path(focused_pid, path);
 
-    // read existing events first so we can append
-    static unsigned char existing[sizeof(dt_event_t)*DT_EVENT_QUEUE_MAX];
+    static unsigned char raw[DT_QUEUE_BYTES];
+    int count = 0;
 
-    int elen=0;
     int fd = open(path, O_RDONLY);
 
     if (fd >= 0)
     {
-        int r = (int)read(fd, existing, sizeof(existing));
+        int r  = (int)read(fd, raw, sizeof(raw));
         close(fd);
-        if (r > 0) elen = r;
+
+        if (r >= (int)sizeof(int))
+        {
+            count = *(int *)raw;
+            if (count < 0 || count > DT_EVENT_QUEUE_MAX) count = 0;
+        }
     }
 
-    // drop oldest if queue full
-    int max_bytes = (int)(sizeof(dt_event_t) *DT_EVENT_QUEUE_MAX );
-    if (elen + (int)sizeof(dt_event_t) > max_bytes) return;
+    if (count >= DT_EVENT_QUEUE_MAX) return;
 
-    fd = open(path, O_WRONLY|O_CREAT);
+    dt_event_t *evs = (dt_event_t *)(raw + sizeof(int));
+    evs[count]  = *ev;
+    count++;
+    *(int *)raw = count;
+
+    fd = open(path, O_WRONLY | O_CREAT);
     if (fd < 0) return;
-    if (elen > 0) write(fd, existing, (unsigned)elen);
 
-    write(fd, ev, sizeof(dt_event_t));
-
+    write(fd, raw, sizeof(int) + sizeof(dt_event_t) * (unsigned)count);
     close(fd);
 }
 
 void dt_clear_input(pid_t pid)
 {
-    if (pid<=0) return;
+    if (pid <= 0) return;
 
-    char path[64]; _pid_path(pid, path);
-    int fd=open(path, O_WRONLY|O_CREAT);
+    char path[64];
+    _pid_path(pid, path);
+    int fd = open(path, O_WRONLY | O_CREAT);
 
-    if (fd>=0) close(fd);
+    if (fd >= 0)
+    {
+        int zero = 0;
+        write(fd, &zero, sizeof(zero));
+        close(fd);
+    }
 }
 
 int dt_make_mouse_event(
